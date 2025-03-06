@@ -38,12 +38,20 @@ export class DrugManegementAppStack extends cdk.Stack {
       "MedicationHistory",
       {
         partitionKey: { name: "userId", type: dynamodb.AttributeType.STRING },
-        sortKey: { name: "takenTime", type: dynamodb.AttributeType.STRING },
+        sortKey: { name: "medicationId", type: dynamodb.AttributeType.STRING },
         tableName: "MedicationHistory",
         billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
         removalPolicy: cdk.RemovalPolicy.DESTROY,
       }
     );
+
+    // 服用履歴テーブルに takenTime のグローバルセカンダリインデックスを追加
+    medicationHistoryTable.addGlobalSecondaryIndex({
+      indexName: "MedicationHistoryByTakenTime",
+      partitionKey: { name: "userId", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "takenTime", type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
 
     // DynamoDBの読み取り権限をLambdaに付与
     medicationsTable.grantReadData(fn);
