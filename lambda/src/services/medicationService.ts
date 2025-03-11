@@ -2,6 +2,7 @@ import {
   ScanCommand,
   PutItemCommand,
   DeleteItemCommand,
+  GetItemCommand,
 } from "@aws-sdk/client-dynamodb";
 import { v4 as uuidv4 } from "uuid";
 import { dynamoDB } from "../utils/dynamoClient";
@@ -40,11 +41,40 @@ export const getMedications = async (userId: string) => {
 };
 
 /**
+ * 特定の薬の取得
+ * @param medicationId 薬のID
+ * @returns 薬の情報
+ */
+export const getMedicationById = async (medicationId: string) => {
+  const params = {
+    TableName: "Medications",
+    Key: {
+      medicationId: { S: medicationId },
+    },
+  };
+
+  try {
+    const result = await dynamoDB.send(new GetItemCommand(params));
+    if (!result.Item) return;
+    return {
+      userId: result.Item.userId.S!,
+      medicationId: result.Item.medicationId.S!,
+      name: result.Item.name.S!,
+      scheduleTime: result.Item.scheduleTime?.L?.map((t) => t.S) || [],
+      intervalHours: parseInt(result.Item.intervalHours?.S || "0"),
+    };
+  } catch (err) {
+    console.error("Failed to fetch medication", err);
+    return null;
+  }
+};
+
+/**
  * 薬の追加
- * @param userId 
- * @param name 
- * @param scheduleTimes 
- * @param intervalHours 
+ * @param userId
+ * @param name
+ * @param scheduleTimes
+ * @param intervalHours
  */
 export const addMedication = async (
   userId: string,
@@ -61,7 +91,7 @@ export const addMedication = async (
       scheduleTime: {
         L: scheduleTimes.map((time: string) => ({ S: time })),
       },
-      intervalHours: { N: intervalHours?.toString() || "0" },
+      intervalHours: { S: intervalHours?.toString() || "0" },
     },
   };
 
