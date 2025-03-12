@@ -1,9 +1,9 @@
-import { Hono } from "hono";
+import { Context, Hono } from "hono";
 import { logger } from "hono/logger";
-import medicationRoutes from "./routes/medicationsRoutes";
 import { lineWebhookMiddleware } from "./line/webhookMiddleware";
-import { handleTextMessage } from "./handlers/messageHandler";
+import medicationRoutes from "./routes/medicationsRoutes";
 import { createLineClient } from "./line/client";
+import { handleTextMessage } from "./handlers/messageHandler";
 import type { WebhookEvent } from "@line/bot-sdk";
 
 const app = new Hono();
@@ -12,7 +12,7 @@ app.use("*", logger());
 app.use("/webhook", lineWebhookMiddleware);
 
 app.get("/", (c) => c.text("Hello Hono!"));
-app.post("/webhook", async (c) => {
+app.post("/webhook", async (c: Context) => {
   const lineClient = createLineClient(c);
 
   const events: WebhookEvent[] = (await c.req.json()).events;
@@ -26,6 +26,6 @@ app.post("/webhook", async (c) => {
   return c.json({ message: "Webhook received" });
 });
 
-app.route("/", medicationRoutes);
+app.route("/addMedication", medicationRoutes);
 
 export default app;
