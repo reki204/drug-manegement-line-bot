@@ -3,6 +3,7 @@ import { Construct } from "constructs";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as apigw from "aws-cdk-lib/aws-apigateway";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
+import * as iam from "aws-cdk-lib/aws-iam";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import * as ssm from "aws-cdk-lib/aws-ssm";
 
@@ -27,8 +28,14 @@ export class DrugManegementAppStack extends cdk.Stack {
       environment: {
         CHANNEL_ACCESS_TOKEN: channelAccessToken,
         CHANNEL_SECRET: channelSecret,
+        ENV: "production",
+        LAMBDA_ARN: "",
       },
+      timeout: cdk.Duration.seconds(30),
     });
+
+    // Lambda FunctionのARNを環境変数に追加
+    fn.addEnvironment("LAMBDA_ARN", fn.functionArn);
 
     fn.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE,
@@ -63,16 +70,46 @@ export class DrugManegementAppStack extends cdk.Stack {
       }
     );
 
-    // 服用履歴テーブルに takenTime のグローバルセカンダリインデックスを追加
+    // 服用履歴テーブルに GlobalSecondaryIndex 追加
     medicationHistoryTable.addGlobalSecondaryIndex({
-      indexName: "MedicationHistoryByTakenTime",
+      indexName: "UserIdIndex",
       partitionKey: { name: "userId", type: dynamodb.AttributeType.STRING },
       sortKey: { name: "takenTime", type: dynamodb.AttributeType.STRING },
       projectionType: dynamodb.ProjectionType.ALL,
     });
 
-    // DynamoDBの読み取り権限をLambdaに付与
-    medicationsTable.grantReadData(fn);
-    medicationHistoryTable.grantReadData(fn);
+    medicationsTable.grantReadWriteData(fn);
+    medicationHistoryTable.grantReadWriteData(fn);
+
+    // EventBridgeへのアクセス権限をLambdaに付与
+    const eventBridgePolicy = new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        "events:PutRule",
+        "events:PutTargets",
+        "events:DeleteRule",
+        "events:RemoveTargets",
+        "events:DescribeRule",
+        "events:ListTargetsByRule",
+      ],
+      resources: ["*"],
+    });
+
+    fn.addToRolePolicy(eventBridgePolicy);
+
+    // Lambda自身を呼び出す権限を追加
+    const lambdaInvokePolicy = new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: ["lambda:InvokeFunction"],
+      resources: [fn.functionArn],
+    });
+
+    fn.addToRolePolicy(lambdaInvokePolicy);
+
+    // EventBridgeからLambdaを呼び出す権限を付与
+    fn.addPermission("AllowEventBridgeInvoke", {
+      principal: new iam.ServicePrincipal("events.amazonaws.com"),
+      action: "lambda:InvokeFunction",
+    });
   }
 }
