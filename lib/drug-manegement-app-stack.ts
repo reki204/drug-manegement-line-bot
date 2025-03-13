@@ -43,6 +43,16 @@ export class DrugManegementAppStack extends cdk.Stack {
 
     new apigw.LambdaRestApi(this, "LineBotApi", {
       handler: fn,
+      defaultCorsPreflightOptions: {
+        allowOrigins: ["https://line-drug-manegement-utils.vercel.app"],
+        allowMethods: ["POST", "OPTIONS"],
+        allowHeaders: [
+          "Content-Type",
+          "X-Custom-Header",
+          "Upgrade-Insecure-Requests",
+        ],
+        maxAge: cdk.Duration.seconds(600),
+      },
     });
 
     // 薬の管理テーブル

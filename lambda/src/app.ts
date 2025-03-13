@@ -1,5 +1,6 @@
 import { Context, Hono } from "hono";
 import { logger } from "hono/logger";
+import { cors } from "hono/cors";
 import { lineWebhookMiddleware } from "./line/webhookMiddleware";
 import medicationRoutes from "./routes/medicationsRoutes";
 import { createLineClient } from "./line/client";
@@ -8,6 +9,18 @@ import type { WebhookEvent } from "@line/bot-sdk";
 
 const app = new Hono();
 
+app.use(
+  "/addMedication",
+  cors({
+    origin: "https://line-drug-manegement-utils.vercel.app",
+    allowHeaders: [
+      "Content-Type",
+    ],
+    allowMethods: ["POST", "OPTIONS"],
+    exposeHeaders: ["Content-Length", "X-Kuma-Revision"],
+    maxAge: 600,
+  })
+);
 app.use("*", logger());
 app.use("/webhook", lineWebhookMiddleware);
 
