@@ -21,6 +21,11 @@ export class DrugManegementAppStack extends cdk.Stack {
       "channel-secret"
     );
 
+    const channelId = ssm.StringParameter.valueForStringParameter(
+      this,
+      "channel-id"
+    );
+
     const fn = new NodejsFunction(this, "lambda", {
       entry: "lambda/index.ts",
       handler: "handler",
@@ -28,6 +33,7 @@ export class DrugManegementAppStack extends cdk.Stack {
       environment: {
         CHANNEL_ACCESS_TOKEN: channelAccessToken,
         CHANNEL_SECRET: channelSecret,
+        CHANNEL_ID: channelId,
         ENV: "production",
         LAMBDA_ARN: "",
       },
