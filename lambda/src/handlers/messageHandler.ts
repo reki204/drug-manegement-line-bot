@@ -1,11 +1,13 @@
 import {
   getMedications,
   deleteMedication,
+  getMedicationById,
 } from "../services/medicationService";
 import {
   getMedicationHistory,
   recordMedicationHistory,
 } from "../services/historyService";
+import { scheduleNextIntervalReminder } from "../services/reminderService";
 import type { messagingApi, MessageEvent } from "@line/bot-sdk";
 
 /**
@@ -27,11 +29,30 @@ export const handleTextMessage = async (
 
   if (userInputMessage === "お薬リスト") {
     responseText = await getMedications(userId);
-  } else if (userInputMessage === "服用履歴") {
+  }
+
+  if (userInputMessage === "服用履歴") {
     responseText = await getMedicationHistory(userId);
+  }
+
+  if (userInputMessage.startsWith("飲みました:")) {
+    // 「飲みました:medicationId」形式のメッセージを処理
+    const medicationId = userInputMessage.split(":")[1];
+    if (medicationId) {
+      // 服用履歴を記録
+      responseText = await recordMedicationHistory(userId, medicationId);
+
+      // 次のインターバル通知をスケジュール（インターバル時間が設定されている場合）
+      const medication = await getMedicationById(medicationId);
+      if (medication && medication.intervalHours != "0") {
+        await scheduleNextIntervalReminder(medicationId, new Date());
+        responseText += `\n次の通知は${medication.intervalHours}時間後に設定しました。`;
+      }
+    } else {
+      responseText = "薬のIDを認識できませんでした。";
+    }
   } else if (userInputMessage === "飲みました") {
-    const medicationId = ""; // リクエストからほしい
-    responseText = await recordMedicationHistory(userId, medicationId); // ←今後選択式に対応
+    responseText = "どの薬を飲みましたか？お薬リストから選択してください。";
   }
 
   await client.replyMessage({
