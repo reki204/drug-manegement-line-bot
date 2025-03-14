@@ -6,6 +6,7 @@ import {
 } from "@aws-sdk/client-dynamodb";
 import { v4 as uuidv4 } from "uuid";
 import { dynamoDB } from "../utils/dynamoClient";
+import { setScheduleReminders } from "./reminderService";
 
 /**
  * ユーザーが登録している薬一覧を取得
@@ -32,7 +33,7 @@ export const getMedications = async (userId: string) => {
         "スケジュール未設定";
       const intervalHours = item.intervalHours?.N || "時間未設定";
 
-      return `💊 ${name}\n  服用時間: ${scheduleTime}\n  服用間隔: ${intervalHours}`;
+      return `💊 ${name}\n  服用時間: ${scheduleTime}\n  服用間隔: ${intervalHours}時間`;
     }).join("\n\n");
   } catch (error) {
     console.error("Error 薬の取得に失敗しました:", error);
@@ -55,13 +56,13 @@ export const getMedicationById = async (medicationId: string) => {
 
   try {
     const result = await dynamoDB.send(new GetItemCommand(params));
-    if (!result.Item) return;
+    if (!result.Item) return null;
     return {
       userId: result.Item.userId.S!,
       medicationId: result.Item.medicationId.S!,
       name: result.Item.name.S!,
       scheduleTime: result.Item.scheduleTime?.L?.map((t) => t.S) || [],
-      intervalHours: parseInt(result.Item.intervalHours?.S || "0"),
+      intervalHours: result.Item.intervalHours?.N || "0",
     };
   } catch (err) {
     console.error("Failed to fetch medication", err);
@@ -71,10 +72,14 @@ export const getMedicationById = async (medicationId: string) => {
 
 /**
  * 薬の追加
- * @param userId
- * @param name
- * @param scheduleTimes
- * @param intervalHours
+ * 1. 薬情報をDynamoDBの "Medications" テーブルに保存
+ * 2. 固定のスケジュール時間があれば、その時間に毎日通知するルールを設定
+ * 3. 服用間隔が指定されている場合は、後でユーザーが薬を飲んだタイミングで次回通知をセットアップ
+ *
+ * @param userId ユーザーID
+ * @param name 薬の名前
+ * @param scheduleTimes 固定の通知時間（例："08:00", "20:00"）
+ * @param intervalHours 服用間隔（例：4）
  */
 export const addMedication = async (
   userId: string,
@@ -82,21 +87,37 @@ export const addMedication = async (
   scheduleTimes: string[],
   intervalHours: number
 ) => {
+  const medicationId = uuidv4();
+  const intervalHour = intervalHours?.toString();
+
   const params = {
     TableName: "Medications",
     Item: {
       userId: { S: userId },
-      medicationId: { S: uuidv4() },
+      medicationId: { S: medicationId },
       name: { S: name },
       scheduleTime: {
         L: scheduleTimes.map((time: string) => ({ S: time })),
       },
-      intervalHours: { S: intervalHours?.toString() || "0" },
+      intervalHours: { S: intervalHour || "0" },
     },
   };
 
   try {
     await dynamoDB.send(new PutItemCommand(params));
+
+    // 固定のスケジュール時間がある場合は通知をセットアップ
+    if (scheduleTimes && scheduleTimes.length > 0) {
+      // 各スケジュール時間に対してEventBridgeルールを作成し、毎日通知を実施
+      await setScheduleReminders(medicationId);
+    }
+
+    // 服用間隔がある場合は通知をセットアップ
+    if (intervalHours && intervalHour != "0") {
+      // ※ ここでは薬登録時にインターバル通知のルールも同時にセットしているが、
+      // 実際はユーザーが薬を飲んだタイミングで scheduleNextIntervalReminder を呼び出すケースもある
+      await setScheduleReminders(medicationId);
+    }
   } catch (error) {
     console.error("Error adding medication:", error);
   }
