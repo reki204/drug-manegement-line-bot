@@ -33,7 +33,7 @@ export const getMedicationHistory = async (userId: string) => {
     for (const item of result.Items) {
       const medicationId = item.medicationId.S;
       if (medicationId && !medicationNames.has(medicationId)) {
-        const medication = await getMedicationById(medicationId);
+        const medication = await getMedicationById(userId, medicationId);
         if (medication) {
           medicationNames.set(medicationId, medication.name);
         }
@@ -74,7 +74,7 @@ export const recordMedicationHistory = async (
   medicationId: string
 ) => {
   // 薬の情報を取得
-  const medication = await getMedicationById(medicationId);
+  const medication = await getMedicationById(userId, medicationId);
   if (!medication) {
     return "指定された薬が見つかりませんでした。";
   }

@@ -43,9 +43,9 @@ export const handleTextMessage = async (
       responseText = await recordMedicationHistory(userId, medicationId);
 
       // 次のインターバル通知をスケジュール（インターバル時間が設定されている場合）
-      const medication = await getMedicationById(medicationId);
+      const medication = await getMedicationById(userId, medicationId);
       if (medication && medication.intervalHours != "0") {
-        await scheduleNextIntervalReminder(medicationId, new Date());
+        await scheduleNextIntervalReminder(userId, medicationId, new Date());
         responseText += `\n次の通知は${medication.intervalHours}時間後に設定しました。`;
       }
     } else {
