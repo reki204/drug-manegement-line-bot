@@ -19,13 +19,13 @@ router.post("/", async (c) => {
     return c.json({ error: "Invalid token" }, 401);
   }
 
-  const { name, scheduleTimes, intervalHours } = await c.req.json();
+  const { name, scheduleTime, intervalHours } = await c.req.json();
   if (!name) {
     return c.json({ error: "Missing required fields" }, 400);
   }
 
   try {
-    await addMedication(userId, name, scheduleTimes || [], intervalHours || 0);
+    await addMedication(userId, name, scheduleTime || [], intervalHours || 0);
 
     return c.json({ message: `${name} を追加しました！` });
   } catch (error) {
