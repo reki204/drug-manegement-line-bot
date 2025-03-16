@@ -14,7 +14,7 @@ export const getMedicationHistory = async (userId: string) => {
 
   const params = {
     TableName: "MedicationHistory",
-    IndexName: "UserIdIndex",
+    IndexName: "MedicationHistoryByTakenTime",
     KeyConditionExpression: "userId = :userId AND takenTime >= :threeDaysAgo",
     ExpressionAttributeValues: {
       ":userId": { S: userId },
