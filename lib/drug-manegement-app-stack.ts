@@ -84,6 +84,7 @@ export class DrugManegementAppStack extends cdk.Stack {
         CHANNEL_ID: channelId,
         ENV: "production",
         REMINDER_HANDLER_ARN: reminderHandlerLambda.functionArn,
+        // SCHEDULER_ROLE_ARN: schedulerRole.roleArn,
       },
       timeout: cdk.Duration.seconds(30),
     });
@@ -115,35 +116,54 @@ export class DrugManegementAppStack extends cdk.Stack {
     medicationsTable.grantReadWriteData(reminderHandlerLambda);
     medicationHistoryTable.grantReadWriteData(reminderHandlerLambda);
 
-    // EventBridgeへのアクセス権限をAPI処理用Lambdaに付与
-    const eventBridgePolicy = new iam.PolicyStatement({
+    // EventBridge Schedulerへのアクセス権限をAPI処理用Lambdaに付与
+    const schedulerPolicy = new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
       actions: [
-        "events:PutRule",
-        "events:PutTargets",
-        "events:DeleteRule",
-        "events:RemoveTargets",
-        "events:DescribeRule",
-        "events:ListTargetsByRule",
+        "scheduler:CreateSchedule",
+        "scheduler:DeleteSchedule",
+        "scheduler:GetSchedule",
+        "scheduler:UpdateSchedule",
+        "scheduler:ListSchedules",
       ],
       resources: ["*"],
     });
 
-    apiHandlerLambda.addToRolePolicy(eventBridgePolicy);
+    apiHandlerLambda.addToRolePolicy(schedulerPolicy);
 
-    // API LambdaからReminder Lambdaを呼び出す権限を追加
-    const lambdaInvokePolicy = new iam.PolicyStatement({
+    // EventBridge Scheduler用のIAMロール
+    const schedulerRole = new iam.Role(this, "EventBridgeSchedulerRole", {
+      assumedBy: new iam.ServicePrincipal("scheduler.amazonaws.com"),
+      description:
+        "Role for EventBridge Scheduler to invoke Reminder Handler Lambda",
+    });
+
+    schedulerRole.addToPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ["lambda:InvokeFunction"],
+        resources: [reminderHandlerLambda.functionArn],
+      })
+    );
+
+    // API LambdaからschedulerRole を PassRole できるようにする
+    const passRolePolicy = new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
-      actions: ["lambda:InvokeFunction"],
-      resources: [reminderHandlerLambda.functionArn],
+      actions: ["iam:PassRole"],
+      resources: [schedulerRole.roleArn],
     });
+    apiHandlerLambda.addToRolePolicy(passRolePolicy);
 
-    apiHandlerLambda.addToRolePolicy(lambdaInvokePolicy);
-
-    // EventBridgeからReminder Lambdaを呼び出す権限を付与
-    reminderHandlerLambda.addPermission("AllowEventBridgeInvoke", {
-      principal: new iam.ServicePrincipal("events.amazonaws.com"),
+    // EventBridge SchedulerからReminder Lambdaを呼び出す権限を付与
+    reminderHandlerLambda.addPermission("AllowSchedulerInvoke", {
+      principal: new iam.ServicePrincipal("scheduler.amazonaws.com"),
       action: "lambda:InvokeFunction",
+      sourceArn: `arn:aws:scheduler:${this.region}:${this.account}:schedule/*`,
     });
+
+    apiHandlerLambda.addEnvironment(
+      "SCHEDULER_ROLE_ARN",
+      schedulerRole.roleArn
+    );
   }
 }
