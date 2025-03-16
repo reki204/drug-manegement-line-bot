@@ -8,8 +8,11 @@ import {
   getMedicationHistory,
   recordMedicationHistory,
 } from "../services/historyService";
-import { scheduleNextIntervalReminder } from "../services/reminderService";
-import type { messagingApi, MessageEvent } from "@line/bot-sdk";
+import {
+  deleteMedicationSchedules,
+  scheduleNextIntervalReminder,
+} from "../services/reminderService";
+import type { messagingApi, MessageEvent, QuickReplyItem } from "@line/bot-sdk";
 
 /**
  * 受け取ったメッセージに応じて処理を分岐
@@ -56,7 +59,7 @@ export const handleTextMessage = async (
     responseText = "どの薬を飲みましたか？お薬リストから選択してください。";
   }
 
-  if (userInputMessage === "薬の削除") {
+  if (userInputMessage === "お薬の削除") {
     const medications = await getMedicationsForQuickReply(userId);
     if (!medications || medications.length === 0) {
       responseText = "登録されている薬はありません。";
@@ -68,14 +71,16 @@ export const handleTextMessage = async (
     }
 
     // クイックリプライ形式で薬の名前とIDを提示
-    const quickReplyItems = medications.map((medication: any) => ({
-      type: "action",
-      action: {
-        type: "message",
-        label: medication.name as string,
-        text: `削除:${medication.medicationId}`,
-      },
-    }));
+    const quickReplyItems: QuickReplyItem[] = medications.map(
+      (medication: any) => ({
+        type: "action",
+        action: {
+          type: "message",
+          label: medication.name,
+          text: `削除:${medication.medicationId}`,
+        },
+      })
+    );
 
     await client.replyMessage({
       replyToken,
@@ -94,7 +99,7 @@ export const handleTextMessage = async (
     const medicationId = userInputMessage.split(":")[1];
     if (medicationId) {
       responseText = await deleteMedication(userId, medicationId);
-      // TODO: await deleteMedicationSchedules(userId, medicationId);
+      await deleteMedicationSchedules(medicationId);
     } else {
       responseText = "削除対象の薬が特定できませんでした。";
     }
