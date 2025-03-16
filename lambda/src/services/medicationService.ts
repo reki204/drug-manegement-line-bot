@@ -78,6 +78,40 @@ export const getMedicationById = async (
 };
 
 /**
+ * 指定したユーザーの薬一覧取得（クイックリプライ用）
+ *
+ * @param userId ユーザーID
+ * @returns 薬IDと薬名の配列
+ */
+export const getMedicationsForQuickReply = async (userId: string) => {
+  const params = {
+    TableName: "Medications",
+    FilterExpression: "userId = :userId",
+    ExpressionAttributeValues: {
+      ":userId": { S: userId },
+    },
+  };
+
+  try {
+    const result = await dynamoDB.send(new ScanCommand(params));
+    if (!result.Items || result.Items.length === 0) {
+      return [];
+    }
+
+    // 薬IDと薬名のみを返す
+    const medications = result.Items.map((item) => ({
+      medicationId: item.medicationId?.S!,
+      name: item.name?.S!,
+    }));
+
+    return medications;
+  } catch (error) {
+    console.error("Error fetching medications for quick reply:", error);
+    return [];
+  }
+};
+
+/**
  * 薬の追加
  * 1. 薬情報をDynamoDBの "Medications" テーブルに保存
  * 2. 固定のスケジュール時間があれば、その時間に毎日通知するルールを設定

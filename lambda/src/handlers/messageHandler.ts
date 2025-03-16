@@ -2,6 +2,7 @@ import {
   getMedications,
   deleteMedication,
   getMedicationById,
+  getMedicationsForQuickReply,
 } from "../services/medicationService";
 import {
   getMedicationHistory,
@@ -46,13 +47,57 @@ export const handleTextMessage = async (
       const medication = await getMedicationById(userId, medicationId);
       if (medication && medication.intervalHours != "0") {
         await scheduleNextIntervalReminder(userId, medicationId, new Date());
-        responseText += `\n次の通知は${medication.intervalHours}時間後に設定しました。`;
+        responseText += `\n次の通知を${medication.intervalHours}時間後に設定しました。`;
       }
     } else {
       responseText = "薬のIDを認識できませんでした。";
     }
   } else if (userInputMessage === "飲みました") {
     responseText = "どの薬を飲みましたか？お薬リストから選択してください。";
+  }
+
+  if (userInputMessage === "薬の削除") {
+    const medications = await getMedicationsForQuickReply(userId);
+    if (!medications || medications.length === 0) {
+      responseText = "登録されている薬はありません。";
+      await client.replyMessage({
+        replyToken,
+        messages: [{ type: "text", text: responseText }],
+      });
+      return;
+    }
+
+    // クイックリプライ形式で薬の名前とIDを提示
+    const quickReplyItems = medications.map((medication: any) => ({
+      type: "action",
+      action: {
+        type: "message",
+        label: medication.name as string,
+        text: `削除:${medication.medicationId}`,
+      },
+    }));
+
+    await client.replyMessage({
+      replyToken,
+      messages: [
+        {
+          type: "text",
+          text: "削除したい薬を選択してください。",
+          quickReply: { items: quickReplyItems },
+        },
+      ],
+    });
+    return;
+  }
+
+  if (userInputMessage.startsWith("削除:")) {
+    const medicationId = userInputMessage.split(":")[1];
+    if (medicationId) {
+      responseText = await deleteMedication(userId, medicationId);
+      // TODO: await deleteMedicationSchedules(userId, medicationId);
+    } else {
+      responseText = "削除対象の薬が特定できませんでした。";
+    }
   }
 
   await client.replyMessage({
