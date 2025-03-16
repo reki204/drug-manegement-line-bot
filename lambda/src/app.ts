@@ -13,9 +13,7 @@ app.use(
   "/addMedication",
   cors({
     origin: "https://line-drug-manegement-utils.vercel.app",
-    allowHeaders: [
-      "Content-Type",
-    ],
+    allowHeaders: ["Content-Type", "Authorization"],
     allowMethods: ["POST", "OPTIONS"],
     exposeHeaders: ["Content-Length", "X-Kuma-Revision"],
     maxAge: 600,
@@ -29,7 +27,6 @@ app.post("/webhook", async (c: Context) => {
   const lineClient = createLineClient(c);
 
   const events: WebhookEvent[] = (await c.req.json()).events;
-
   for (const event of events) {
     if (event.type === "message" && event.message.type === "text") {
       await handleTextMessage(event, lineClient);
