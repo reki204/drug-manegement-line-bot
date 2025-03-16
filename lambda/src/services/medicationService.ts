@@ -6,7 +6,10 @@ import {
 } from "@aws-sdk/client-dynamodb";
 import { v4 as uuidv4 } from "uuid";
 import { dynamoDB } from "../utils/dynamoClient";
-import { setScheduleReminders } from "./reminderService";
+import {
+  scheduleNextIntervalReminder,
+  setScheduleReminders,
+} from "./reminderService";
 
 /**
  * ユーザーが登録している薬一覧を取得
@@ -31,7 +34,7 @@ export const getMedications = async (userId: string) => {
       const scheduleTime =
         item.scheduleTime?.L?.map((t) => t.S).join(", ") ||
         "スケジュール未設定";
-      const intervalHours = item.intervalHours?.N || "時間未設定";
+      const intervalHours = item.intervalHours?.S || "時間未設定";
 
       return `💊 ${name}\n  服用時間: ${scheduleTime}\n  服用間隔: ${intervalHours}時間`;
     }).join("\n\n");
@@ -46,10 +49,14 @@ export const getMedications = async (userId: string) => {
  * @param medicationId 薬のID
  * @returns 薬の情報
  */
-export const getMedicationById = async (medicationId: string) => {
+export const getMedicationById = async (
+  userId: string,
+  medicationId: string
+) => {
   const params = {
     TableName: "Medications",
     Key: {
+      userId: { S: userId },
       medicationId: { S: medicationId },
     },
   };
@@ -62,7 +69,7 @@ export const getMedicationById = async (medicationId: string) => {
       medicationId: result.Item.medicationId.S!,
       name: result.Item.name.S!,
       scheduleTime: result.Item.scheduleTime?.L?.map((t) => t.S) || [],
-      intervalHours: result.Item.intervalHours?.N || "0",
+      intervalHours: result.Item.intervalHours?.S || "0",
     };
   } catch (err) {
     console.error("Failed to fetch medication", err);
@@ -109,14 +116,14 @@ export const addMedication = async (
     // 固定のスケジュール時間がある場合は通知をセットアップ
     if (scheduleTimes && scheduleTimes.length > 0) {
       // 各スケジュール時間に対してEventBridgeルールを作成し、毎日通知を実施
-      await setScheduleReminders(medicationId);
+      await setScheduleReminders(userId, medicationId);
     }
 
     // 服用間隔がある場合は通知をセットアップ
     if (intervalHours && intervalHour != "0") {
       // ※ ここでは薬登録時にインターバル通知のルールも同時にセットしているが、
       // 実際はユーザーが薬を飲んだタイミングで scheduleNextIntervalReminder を呼び出すケースもある
-      await setScheduleReminders(medicationId);
+      await scheduleNextIntervalReminder(userId, medicationId, new Date());
     }
   } catch (error) {
     console.error("Error adding medication:", error);
@@ -135,7 +142,10 @@ export const deleteMedication = async (
 ) => {
   const params = {
     TableName: "Medications",
-    Key: { userId: { S: userId }, medicationId: { S: medicationId } },
+    Key: {
+      userId: { S: userId },
+      medicationId: { S: medicationId },
+    },
   };
 
   try {
