@@ -3,11 +3,9 @@ import { getMedicationById } from "../src/services/medicationService";
 
 /**
  * Reminder Handler Lambdaのハンドラー
- * EventBridgeからのイベント処理のみを担当
+ * EventBridge Schedulerからのイベント処理のみを担当
  */
 export const handler = async (event: any) => {
-  console.log("Received event:", JSON.stringify(event, null, 2));
-  // EventBridgeのトリガーイベントを処理
   if (
     event.type === "MEDICATION_REMINDER" ||
     event.type === "MEDICATION_INTERVAL_REMINDER"
@@ -31,12 +29,12 @@ export const handler = async (event: any) => {
  * @param scheduledTime スケジュール時間
  * @param intervalHour インターバル時間
  */
-async function sendMedicationReminder(
+const sendMedicationReminder = async (
   userId: string,
   medicationId: string,
   scheduledTime?: string,
   intervalHour?: string
-) {
+) => {
   const medication = await getMedicationById(userId, medicationId);
   if (!medication) return;
 
@@ -73,4 +71,4 @@ async function sendMedicationReminder(
       },
     ],
   });
-}
+};
