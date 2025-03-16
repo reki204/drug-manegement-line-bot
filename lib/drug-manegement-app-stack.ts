@@ -26,41 +26,6 @@ export class DrugManegementAppStack extends cdk.Stack {
       "channel-id"
     );
 
-    const fn = new NodejsFunction(this, "lambda", {
-      entry: "lambda/index.ts",
-      handler: "handler",
-      runtime: lambda.Runtime.NODEJS_20_X,
-      environment: {
-        CHANNEL_ACCESS_TOKEN: channelAccessToken,
-        CHANNEL_SECRET: channelSecret,
-        CHANNEL_ID: channelId,
-        ENV: "production",
-        LAMBDA_ARN: "",
-      },
-      timeout: cdk.Duration.seconds(30),
-    });
-
-    // Lambda FunctionのARNを環境変数に追加
-    fn.addEnvironment("LAMBDA_ARN", fn.functionArn);
-
-    fn.addFunctionUrl({
-      authType: lambda.FunctionUrlAuthType.NONE,
-    });
-
-    new apigw.LambdaRestApi(this, "LineBotApi", {
-      handler: fn,
-      defaultCorsPreflightOptions: {
-        allowOrigins: ["https://line-drug-manegement-utils.vercel.app"],
-        allowMethods: ["POST", "OPTIONS"],
-        allowHeaders: [
-          "Content-Type",
-          "X-Custom-Header",
-          "Upgrade-Insecure-Requests",
-        ],
-        maxAge: cdk.Duration.seconds(600),
-      },
-    });
-
     // 薬の管理テーブル
     const medicationsTable = new dynamodb.Table(this, "Medications", {
       partitionKey: { name: "userId", type: dynamodb.AttributeType.STRING },
@@ -88,16 +53,69 @@ export class DrugManegementAppStack extends cdk.Stack {
 
     // 服用履歴テーブルに GlobalSecondaryIndex 追加
     medicationHistoryTable.addGlobalSecondaryIndex({
-      indexName: "UserIdIndex",
+      indexName: "MedicationHistoryByTakenTime",
       partitionKey: { name: "userId", type: dynamodb.AttributeType.STRING },
       sortKey: { name: "takenTime", type: dynamodb.AttributeType.STRING },
       projectionType: dynamodb.ProjectionType.ALL,
     });
 
-    medicationsTable.grantReadWriteData(fn);
-    medicationHistoryTable.grantReadWriteData(fn);
+    // Reminder Handler Lambda (EventBridgeからの呼び出し専用)
+    const reminderHandlerLambda = new NodejsFunction(this, "reminderHandler", {
+      entry: "lambda/reminder-handler/index.ts", // 新しいパスに配置する想定
+      handler: "handler",
+      runtime: lambda.Runtime.NODEJS_20_X,
+      environment: {
+        CHANNEL_ACCESS_TOKEN: channelAccessToken,
+        CHANNEL_SECRET: channelSecret,
+        CHANNEL_ID: channelId,
+        ENV: "production",
+      },
+      timeout: cdk.Duration.seconds(30),
+    });
 
-    // EventBridgeへのアクセス権限をLambdaに付与
+    // API Handler Lambda (APIリクエスト処理用)
+    const apiHandlerLambda = new NodejsFunction(this, "apiHandler", {
+      entry: "lambda/api-handler/index.ts",
+      handler: "handler",
+      runtime: lambda.Runtime.NODEJS_20_X,
+      environment: {
+        CHANNEL_ACCESS_TOKEN: channelAccessToken,
+        CHANNEL_SECRET: channelSecret,
+        CHANNEL_ID: channelId,
+        ENV: "production",
+        REMINDER_HANDLER_ARN: reminderHandlerLambda.functionArn,
+      },
+      timeout: cdk.Duration.seconds(30),
+    });
+
+    // Lambda Function URLの設定
+    apiHandlerLambda.addFunctionUrl({
+      authType: lambda.FunctionUrlAuthType.NONE,
+    });
+
+    // API Gateway設定
+    new apigw.LambdaRestApi(this, "LineBotApi", {
+      handler: apiHandlerLambda,
+      defaultCorsPreflightOptions: {
+        allowOrigins: ["https://line-drug-manegement-utils.vercel.app"],
+        allowMethods: ["POST", "OPTIONS"],
+        allowHeaders: [
+          "Content-Type",
+          "X-Custom-Header",
+          "Upgrade-Insecure-Requests",
+          "Authorization",
+        ],
+        maxAge: cdk.Duration.seconds(30),
+      },
+    });
+
+    // DynamoDBへのアクセス権限付与
+    medicationsTable.grantReadWriteData(apiHandlerLambda);
+    medicationHistoryTable.grantReadWriteData(apiHandlerLambda);
+    medicationsTable.grantReadWriteData(reminderHandlerLambda);
+    medicationHistoryTable.grantReadWriteData(reminderHandlerLambda);
+
+    // EventBridgeへのアクセス権限をAPI処理用Lambdaに付与
     const eventBridgePolicy = new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
       actions: [
@@ -111,19 +129,19 @@ export class DrugManegementAppStack extends cdk.Stack {
       resources: ["*"],
     });
 
-    fn.addToRolePolicy(eventBridgePolicy);
+    apiHandlerLambda.addToRolePolicy(eventBridgePolicy);
 
-    // Lambda自身を呼び出す権限を追加
+    // API LambdaからReminder Lambdaを呼び出す権限を追加
     const lambdaInvokePolicy = new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
       actions: ["lambda:InvokeFunction"],
-      resources: [fn.functionArn],
+      resources: [reminderHandlerLambda.functionArn],
     });
 
-    fn.addToRolePolicy(lambdaInvokePolicy);
+    apiHandlerLambda.addToRolePolicy(lambdaInvokePolicy);
 
-    // EventBridgeからLambdaを呼び出す権限を付与
-    fn.addPermission("AllowEventBridgeInvoke", {
+    // EventBridgeからReminder Lambdaを呼び出す権限を付与
+    reminderHandlerLambda.addPermission("AllowEventBridgeInvoke", {
       principal: new iam.ServicePrincipal("events.amazonaws.com"),
       action: "lambda:InvokeFunction",
     });
