@@ -1,307 +1,18 @@
 Parameters:
-  channelaccesstokenParameter:
+  SsmParameterValuechannelaccesstokenC96584B6F00A464EAD1953AFF4B05118Parameter:
     Type: AWS::SSM::Parameter::Value<String>
     Default: channel-access-token
-  channelsecretParameter:
+  SsmParameterValuechannelsecretC96584B6F00A464EAD1953AFF4B05118Parameter:
     Type: AWS::SSM::Parameter::Value<String>
     Default: channel-secret
+  SsmParameterValuechannelidC96584B6F00A464EAD1953AFF4B05118Parameter:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: channel-id
   BootstrapVersion:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /cdk-bootstrap/hnb659fds/version
     Description: Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]
 Resources:
-  lambdaServiceRole494E4CA6:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Action: sts:AssumeRole
-            Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-        Version: "2012-10-17"
-      ManagedPolicyArns:
-        - Fn::Join:
-            - ""
-            - - "arn:"
-              - Ref: AWS::Partition
-              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-    Metadata:
-      aws:cdk:path: DrugManegementAppStack/lambda/ServiceRole/Resource
-  lambdaServiceRoleDefaultPolicyBF6FA5E7:
-    Type: AWS::IAM::Policy
-    Properties:
-      PolicyDocument:
-        Statement:
-          - Action:
-              - dynamodb:BatchGetItem
-              - dynamodb:ConditionCheckItem
-              - dynamodb:DescribeTable
-              - dynamodb:GetItem
-              - dynamodb:GetRecords
-              - dynamodb:GetShardIterator
-              - dynamodb:Query
-              - dynamodb:Scan
-            Effect: Allow
-            Resource:
-              - Fn::GetAtt:
-                  - MedicationHistoryADC1A6AB
-                  - Arn
-              - Fn::GetAtt:
-                  - Medications0A1EF4C5
-                  - Arn
-              - Fn::Join:
-                  - ""
-                  - - Fn::GetAtt:
-                        - MedicationHistoryADC1A6AB
-                        - Arn
-                    - /index/*
-              - Ref: AWS::NoValue
-        Version: "2012-10-17"
-      PolicyName: lambdaServiceRoleDefaultPolicyBF6FA5E7
-      Roles:
-        - Ref: lambdaServiceRole494E4CA6
-    Metadata:
-      aws:cdk:path: DrugManegementAppStack/lambda/ServiceRole/DefaultPolicy/Resource
-  lambda8B5974B5:
-    Type: AWS::Lambda::Function
-    Properties:
-      Code:
-        S3Bucket:
-          Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}
-        S3Key: 2d8ffe70a4c14e4dd1f7ec2899dea68afbd26b8ece5eed61e9d6bccbad0c8770.zip
-      Environment:
-        Variables:
-          CHANNEL_ACCESS_TOKEN:
-            Ref: channelaccesstokenParameter
-          CHANNEL_SECRET:
-            Ref: channelsecretParameter
-      Handler: index.handler
-      Role:
-        Fn::GetAtt:
-          - lambdaServiceRole494E4CA6
-          - Arn
-      Runtime: nodejs20.x
-    DependsOn:
-      - lambdaServiceRoleDefaultPolicyBF6FA5E7
-      - lambdaServiceRole494E4CA6
-    Metadata:
-      aws:cdk:path: DrugManegementAppStack/lambda/Resource
-      aws:asset:path: C:\git\drug-manegement-app\cdk.out\asset.2d8ffe70a4c14e4dd1f7ec2899dea68afbd26b8ece5eed61e9d6bccbad0c8770
-      aws:asset:is-bundled: true
-      aws:asset:property: Code
-  lambdaFunctionUrl327AA8ED:
-    Type: AWS::Lambda::Url
-    Properties:
-      AuthType: NONE
-      TargetFunctionArn:
-        Fn::GetAtt:
-          - lambda8B5974B5
-          - Arn
-    Metadata:
-      aws:cdk:path: DrugManegementAppStack/lambda/FunctionUrl/Resource
-  lambdainvokefunctionurl8987155C:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunctionUrl
-      FunctionName:
-        Fn::GetAtt:
-          - lambda8B5974B5
-          - Arn
-      FunctionUrlAuthType: NONE
-      Principal: "*"
-    Metadata:
-      aws:cdk:path: DrugManegementAppStack/lambda/invoke-function-url
-  LineBotApi541032A3:
-    Type: AWS::ApiGateway::RestApi
-    Properties:
-      Name: LineBotApi
-    Metadata:
-      aws:cdk:path: DrugManegementAppStack/LineBotApi/Resource
-  LineBotApiDeployment23FEF956e89aacbef6658130c65b8ca832009533:
-    Type: AWS::ApiGateway::Deployment
-    Properties:
-      Description: Automatically created by the RestApi construct
-      RestApiId:
-        Ref: LineBotApi541032A3
-    DependsOn:
-      - LineBotApiproxyANYBB58D256
-      - LineBotApiproxy748B7A04
-      - LineBotApiANY5868A3CB
-    Metadata:
-      aws:cdk:path: DrugManegementAppStack/LineBotApi/Deployment/Resource
-  LineBotApiDeploymentStageprod510D3E32:
-    Type: AWS::ApiGateway::Stage
-    Properties:
-      DeploymentId:
-        Ref: LineBotApiDeployment23FEF956e89aacbef6658130c65b8ca832009533
-      RestApiId:
-        Ref: LineBotApi541032A3
-      StageName: prod
-    Metadata:
-      aws:cdk:path: DrugManegementAppStack/LineBotApi/DeploymentStage.prod/Resource
-  LineBotApiproxy748B7A04:
-    Type: AWS::ApiGateway::Resource
-    Properties:
-      ParentId:
-        Fn::GetAtt:
-          - LineBotApi541032A3
-          - RootResourceId
-      PathPart: "{proxy+}"
-      RestApiId:
-        Ref: LineBotApi541032A3
-    Metadata:
-      aws:cdk:path: DrugManegementAppStack/LineBotApi/Default/{proxy+}/Resource
-  LineBotApiproxyANYApiPermissionDrugManegementAppStackLineBotApi8A0390E3ANYproxy3D641FA9:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName:
-        Fn::GetAtt:
-          - lambda8B5974B5
-          - Arn
-      Principal: apigateway.amazonaws.com
-      SourceArn:
-        Fn::Join:
-          - ""
-          - - "arn:"
-            - Ref: AWS::Partition
-            - ":execute-api:"
-            - Ref: AWS::Region
-            - ":"
-            - Ref: AWS::AccountId
-            - ":"
-            - Ref: LineBotApi541032A3
-            - /
-            - Ref: LineBotApiDeploymentStageprod510D3E32
-            - /*/*
-    Metadata:
-      aws:cdk:path: DrugManegementAppStack/LineBotApi/Default/{proxy+}/ANY/ApiPermission.DrugManegementAppStackLineBotApi8A0390E3.ANY..{proxy+}
-  LineBotApiproxyANYApiPermissionTestDrugManegementAppStackLineBotApi8A0390E3ANYproxy99141A87:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName:
-        Fn::GetAtt:
-          - lambda8B5974B5
-          - Arn
-      Principal: apigateway.amazonaws.com
-      SourceArn:
-        Fn::Join:
-          - ""
-          - - "arn:"
-            - Ref: AWS::Partition
-            - ":execute-api:"
-            - Ref: AWS::Region
-            - ":"
-            - Ref: AWS::AccountId
-            - ":"
-            - Ref: LineBotApi541032A3
-            - /test-invoke-stage/*/*
-    Metadata:
-      aws:cdk:path: DrugManegementAppStack/LineBotApi/Default/{proxy+}/ANY/ApiPermission.Test.DrugManegementAppStackLineBotApi8A0390E3.ANY..{proxy+}
-  LineBotApiproxyANYBB58D256:
-    Type: AWS::ApiGateway::Method
-    Properties:
-      AuthorizationType: NONE
-      HttpMethod: ANY
-      Integration:
-        IntegrationHttpMethod: POST
-        Type: AWS_PROXY
-        Uri:
-          Fn::Join:
-            - ""
-            - - "arn:"
-              - Ref: AWS::Partition
-              - ":apigateway:"
-              - Ref: AWS::Region
-              - :lambda:path/2015-03-31/functions/
-              - Fn::GetAtt:
-                  - lambda8B5974B5
-                  - Arn
-              - /invocations
-      ResourceId:
-        Ref: LineBotApiproxy748B7A04
-      RestApiId:
-        Ref: LineBotApi541032A3
-    Metadata:
-      aws:cdk:path: DrugManegementAppStack/LineBotApi/Default/{proxy+}/ANY/Resource
-  LineBotApiANYApiPermissionDrugManegementAppStackLineBotApi8A0390E3ANY5E8C2AC5:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName:
-        Fn::GetAtt:
-          - lambda8B5974B5
-          - Arn
-      Principal: apigateway.amazonaws.com
-      SourceArn:
-        Fn::Join:
-          - ""
-          - - "arn:"
-            - Ref: AWS::Partition
-            - ":execute-api:"
-            - Ref: AWS::Region
-            - ":"
-            - Ref: AWS::AccountId
-            - ":"
-            - Ref: LineBotApi541032A3
-            - /
-            - Ref: LineBotApiDeploymentStageprod510D3E32
-            - /*/
-    Metadata:
-      aws:cdk:path: DrugManegementAppStack/LineBotApi/Default/ANY/ApiPermission.DrugManegementAppStackLineBotApi8A0390E3.ANY..
-  LineBotApiANYApiPermissionTestDrugManegementAppStackLineBotApi8A0390E3ANYF39D4356:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName:
-        Fn::GetAtt:
-          - lambda8B5974B5
-          - Arn
-      Principal: apigateway.amazonaws.com
-      SourceArn:
-        Fn::Join:
-          - ""
-          - - "arn:"
-            - Ref: AWS::Partition
-            - ":execute-api:"
-            - Ref: AWS::Region
-            - ":"
-            - Ref: AWS::AccountId
-            - ":"
-            - Ref: LineBotApi541032A3
-            - /test-invoke-stage/*/
-    Metadata:
-      aws:cdk:path: DrugManegementAppStack/LineBotApi/Default/ANY/ApiPermission.Test.DrugManegementAppStackLineBotApi8A0390E3.ANY..
-  LineBotApiANY5868A3CB:
-    Type: AWS::ApiGateway::Method
-    Properties:
-      AuthorizationType: NONE
-      HttpMethod: ANY
-      Integration:
-        IntegrationHttpMethod: POST
-        Type: AWS_PROXY
-        Uri:
-          Fn::Join:
-            - ""
-            - - "arn:"
-              - Ref: AWS::Partition
-              - ":apigateway:"
-              - Ref: AWS::Region
-              - :lambda:path/2015-03-31/functions/
-              - Fn::GetAtt:
-                  - lambda8B5974B5
-                  - Arn
-              - /invocations
-      ResourceId:
-        Fn::GetAtt:
-          - LineBotApi541032A3
-          - RootResourceId
-      RestApiId:
-        Ref: LineBotApi541032A3
-    Metadata:
-      aws:cdk:path: DrugManegementAppStack/LineBotApi/Default/ANY/Resource
   Medications0A1EF4C5:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -351,10 +62,559 @@ Resources:
     DeletionPolicy: Delete
     Metadata:
       aws:cdk:path: DrugManegementAppStack/MedicationHistory/Resource
+  reminderHandlerServiceRole7DECD72B:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: DrugManegementAppStack/reminderHandler/ServiceRole/Resource
+  reminderHandlerServiceRoleDefaultPolicy3CC0CEE4:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:BatchWriteItem
+              - dynamodb:ConditionCheckItem
+              - dynamodb:DeleteItem
+              - dynamodb:DescribeTable
+              - dynamodb:GetItem
+              - dynamodb:GetRecords
+              - dynamodb:GetShardIterator
+              - dynamodb:PutItem
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:UpdateItem
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - MedicationHistoryADC1A6AB
+                  - Arn
+              - Fn::GetAtt:
+                  - Medications0A1EF4C5
+                  - Arn
+              - Fn::Join:
+                  - ""
+                  - - Fn::GetAtt:
+                        - MedicationHistoryADC1A6AB
+                        - Arn
+                    - /index/*
+              - Ref: AWS::NoValue
+        Version: "2012-10-17"
+      PolicyName: reminderHandlerServiceRoleDefaultPolicy3CC0CEE4
+      Roles:
+        - Ref: reminderHandlerServiceRole7DECD72B
+    Metadata:
+      aws:cdk:path: DrugManegementAppStack/reminderHandler/ServiceRole/DefaultPolicy/Resource
+  reminderHandler671885DB:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket:
+          Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}
+        S3Key: 888421f46c1cba4afcecba508a3e49c5ba9654ac5754db4cb45d2116d3e7a0d2.zip
+      Environment:
+        Variables:
+          CHANNEL_ACCESS_TOKEN:
+            Ref: SsmParameterValuechannelaccesstokenC96584B6F00A464EAD1953AFF4B05118Parameter
+          CHANNEL_SECRET:
+            Ref: SsmParameterValuechannelsecretC96584B6F00A464EAD1953AFF4B05118Parameter
+          CHANNEL_ID:
+            Ref: SsmParameterValuechannelidC96584B6F00A464EAD1953AFF4B05118Parameter
+          ENV: production
+      Handler: index.handler
+      Role:
+        Fn::GetAtt:
+          - reminderHandlerServiceRole7DECD72B
+          - Arn
+      Runtime: nodejs20.x
+      Timeout: 30
+    DependsOn:
+      - reminderHandlerServiceRoleDefaultPolicy3CC0CEE4
+      - reminderHandlerServiceRole7DECD72B
+    Metadata:
+      aws:cdk:path: DrugManegementAppStack/reminderHandler/Resource
+      aws:asset:path: C:\git\drug-manegement-app\cdk.out\asset.888421f46c1cba4afcecba508a3e49c5ba9654ac5754db4cb45d2116d3e7a0d2
+      aws:asset:is-bundled: true
+      aws:asset:property: Code
+  reminderHandlerAllowSchedulerInvoke0451E445:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - reminderHandler671885DB
+          - Arn
+      Principal: scheduler.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:aws:scheduler:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - :schedule/*
+    Metadata:
+      aws:cdk:path: DrugManegementAppStack/reminderHandler/AllowSchedulerInvoke
+  apiHandlerServiceRoleF61AABDA:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: DrugManegementAppStack/apiHandler/ServiceRole/Resource
+  apiHandlerServiceRoleDefaultPolicyB788A84D:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:BatchWriteItem
+              - dynamodb:ConditionCheckItem
+              - dynamodb:DeleteItem
+              - dynamodb:DescribeTable
+              - dynamodb:GetItem
+              - dynamodb:GetRecords
+              - dynamodb:GetShardIterator
+              - dynamodb:PutItem
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:UpdateItem
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - MedicationHistoryADC1A6AB
+                  - Arn
+              - Fn::GetAtt:
+                  - Medications0A1EF4C5
+                  - Arn
+              - Fn::Join:
+                  - ""
+                  - - Fn::GetAtt:
+                        - MedicationHistoryADC1A6AB
+                        - Arn
+                    - /index/*
+              - Ref: AWS::NoValue
+        Version: "2012-10-17"
+      PolicyName: apiHandlerServiceRoleDefaultPolicyB788A84D
+      Roles:
+        - Ref: apiHandlerServiceRoleF61AABDA
+    Metadata:
+      aws:cdk:path: DrugManegementAppStack/apiHandler/ServiceRole/DefaultPolicy/Resource
+  apiHandler8027B936:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket:
+          Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}
+        S3Key: 5f07ebc2c73cbc9192823bee986af33c8d034839349cc92191d8fa1649d30bd0.zip
+      Environment:
+        Variables:
+          CHANNEL_ACCESS_TOKEN:
+            Ref: SsmParameterValuechannelaccesstokenC96584B6F00A464EAD1953AFF4B05118Parameter
+          CHANNEL_SECRET:
+            Ref: SsmParameterValuechannelsecretC96584B6F00A464EAD1953AFF4B05118Parameter
+          CHANNEL_ID:
+            Ref: SsmParameterValuechannelidC96584B6F00A464EAD1953AFF4B05118Parameter
+          ENV: production
+          REMINDER_HANDLER_ARN:
+            Fn::GetAtt:
+              - reminderHandler671885DB
+              - Arn
+          SCHEDULER_ROLE_ARN:
+            Fn::GetAtt:
+              - EventBridgeSchedulerRole9C1F9676
+              - Arn
+      Handler: index.handler
+      Role:
+        Fn::GetAtt:
+          - apiHandlerServiceRoleF61AABDA
+          - Arn
+      Runtime: nodejs20.x
+      Timeout: 30
+    DependsOn:
+      - apiHandlerServiceRoleDefaultPolicyB788A84D
+      - apiHandlerServiceRoleF61AABDA
+    Metadata:
+      aws:cdk:path: DrugManegementAppStack/apiHandler/Resource
+      aws:asset:path: C:\git\drug-manegement-app\cdk.out\asset.5f07ebc2c73cbc9192823bee986af33c8d034839349cc92191d8fa1649d30bd0
+      aws:asset:is-bundled: true
+      aws:asset:property: Code
+  apiHandlerFunctionUrl85CDB181:
+    Type: AWS::Lambda::Url
+    Properties:
+      AuthType: NONE
+      TargetFunctionArn:
+        Fn::GetAtt:
+          - apiHandler8027B936
+          - Arn
+    Metadata:
+      aws:cdk:path: DrugManegementAppStack/apiHandler/FunctionUrl/Resource
+  apiHandlerinvokefunctionurl77ADE579:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunctionUrl
+      FunctionName:
+        Fn::GetAtt:
+          - apiHandler8027B936
+          - Arn
+      FunctionUrlAuthType: NONE
+      Principal: "*"
+    Metadata:
+      aws:cdk:path: DrugManegementAppStack/apiHandler/invoke-function-url
+  apiHandlerinlinePolicyAddedToExecutionRole090E66CAC:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - scheduler:CreateSchedule
+              - scheduler:DeleteSchedule
+              - scheduler:GetSchedule
+              - scheduler:ListSchedules
+              - scheduler:UpdateSchedule
+            Effect: Allow
+            Resource: "*"
+        Version: "2012-10-17"
+      PolicyName: apiHandlerinlinePolicyAddedToExecutionRole090E66CAC
+      Roles:
+        - Ref: apiHandlerServiceRoleF61AABDA
+    Metadata:
+      aws:cdk:path: DrugManegementAppStack/apiHandler/inlinePolicyAddedToExecutionRole-0/Resource
+  apiHandlerinlinePolicyAddedToExecutionRole1965A492F:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: iam:PassRole
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - EventBridgeSchedulerRole9C1F9676
+                - Arn
+        Version: "2012-10-17"
+      PolicyName: apiHandlerinlinePolicyAddedToExecutionRole1965A492F
+      Roles:
+        - Ref: apiHandlerServiceRoleF61AABDA
+    Metadata:
+      aws:cdk:path: DrugManegementAppStack/apiHandler/inlinePolicyAddedToExecutionRole-1/Resource
+  LineBotApi541032A3:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: LineBotApi
+    Metadata:
+      aws:cdk:path: DrugManegementAppStack/LineBotApi/Resource
+  LineBotApiDeployment23FEF95697cb6c5ddc73e73cfc3c999e81a76ed2:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      Description: Automatically created by the RestApi construct
+      RestApiId:
+        Ref: LineBotApi541032A3
+    DependsOn:
+      - LineBotApiproxyANYBB58D256
+      - LineBotApiproxyOPTIONS91690F5D
+      - LineBotApiproxy748B7A04
+      - LineBotApiANY5868A3CB
+      - LineBotApiOPTIONSA811AB27
+    Metadata:
+      aws:cdk:path: DrugManegementAppStack/LineBotApi/Deployment/Resource
+  LineBotApiDeploymentStageprod510D3E32:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      DeploymentId:
+        Ref: LineBotApiDeployment23FEF95697cb6c5ddc73e73cfc3c999e81a76ed2
+      RestApiId:
+        Ref: LineBotApi541032A3
+      StageName: prod
+    Metadata:
+      aws:cdk:path: DrugManegementAppStack/LineBotApi/DeploymentStage.prod/Resource
+  LineBotApiOPTIONSA811AB27:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Custom-Header,Upgrade-Insecure-Requests,Authorization'"
+              method.response.header.Access-Control-Allow-Origin: "'https://line-drug-manegement-utils.vercel.app'"
+              method.response.header.Vary: "'Origin'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+              method.response.header.Access-Control-Max-Age: "'30'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Vary: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Max-Age: true
+          StatusCode: "204"
+      ResourceId:
+        Fn::GetAtt:
+          - LineBotApi541032A3
+          - RootResourceId
+      RestApiId:
+        Ref: LineBotApi541032A3
+    Metadata:
+      aws:cdk:path: DrugManegementAppStack/LineBotApi/Default/OPTIONS/Resource
+  LineBotApiproxy748B7A04:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Fn::GetAtt:
+          - LineBotApi541032A3
+          - RootResourceId
+      PathPart: "{proxy+}"
+      RestApiId:
+        Ref: LineBotApi541032A3
+    Metadata:
+      aws:cdk:path: DrugManegementAppStack/LineBotApi/Default/{proxy+}/Resource
+  LineBotApiproxyOPTIONS91690F5D:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Custom-Header,Upgrade-Insecure-Requests,Authorization'"
+              method.response.header.Access-Control-Allow-Origin: "'https://line-drug-manegement-utils.vercel.app'"
+              method.response.header.Vary: "'Origin'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+              method.response.header.Access-Control-Max-Age: "'30'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Vary: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Max-Age: true
+          StatusCode: "204"
+      ResourceId:
+        Ref: LineBotApiproxy748B7A04
+      RestApiId:
+        Ref: LineBotApi541032A3
+    Metadata:
+      aws:cdk:path: DrugManegementAppStack/LineBotApi/Default/{proxy+}/OPTIONS/Resource
+  LineBotApiproxyANYApiPermissionDrugManegementAppStackLineBotApi8A0390E3ANYproxy3D641FA9:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - apiHandler8027B936
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: LineBotApi541032A3
+            - /
+            - Ref: LineBotApiDeploymentStageprod510D3E32
+            - /*/*
+    Metadata:
+      aws:cdk:path: DrugManegementAppStack/LineBotApi/Default/{proxy+}/ANY/ApiPermission.DrugManegementAppStackLineBotApi8A0390E3.ANY..{proxy+}
+  LineBotApiproxyANYApiPermissionTestDrugManegementAppStackLineBotApi8A0390E3ANYproxy99141A87:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - apiHandler8027B936
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: LineBotApi541032A3
+            - /test-invoke-stage/*/*
+    Metadata:
+      aws:cdk:path: DrugManegementAppStack/LineBotApi/Default/{proxy+}/ANY/ApiPermission.Test.DrugManegementAppStackLineBotApi8A0390E3.ANY..{proxy+}
+  LineBotApiproxyANYBB58D256:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: ANY
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - ":apigateway:"
+              - Ref: AWS::Region
+              - :lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - apiHandler8027B936
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: LineBotApiproxy748B7A04
+      RestApiId:
+        Ref: LineBotApi541032A3
+    Metadata:
+      aws:cdk:path: DrugManegementAppStack/LineBotApi/Default/{proxy+}/ANY/Resource
+  LineBotApiANYApiPermissionDrugManegementAppStackLineBotApi8A0390E3ANY5E8C2AC5:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - apiHandler8027B936
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: LineBotApi541032A3
+            - /
+            - Ref: LineBotApiDeploymentStageprod510D3E32
+            - /*/
+    Metadata:
+      aws:cdk:path: DrugManegementAppStack/LineBotApi/Default/ANY/ApiPermission.DrugManegementAppStackLineBotApi8A0390E3.ANY..
+  LineBotApiANYApiPermissionTestDrugManegementAppStackLineBotApi8A0390E3ANYF39D4356:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - apiHandler8027B936
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: LineBotApi541032A3
+            - /test-invoke-stage/*/
+    Metadata:
+      aws:cdk:path: DrugManegementAppStack/LineBotApi/Default/ANY/ApiPermission.Test.DrugManegementAppStackLineBotApi8A0390E3.ANY..
+  LineBotApiANY5868A3CB:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: ANY
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - ":apigateway:"
+              - Ref: AWS::Region
+              - :lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - apiHandler8027B936
+                  - Arn
+              - /invocations
+      ResourceId:
+        Fn::GetAtt:
+          - LineBotApi541032A3
+          - RootResourceId
+      RestApiId:
+        Ref: LineBotApi541032A3
+    Metadata:
+      aws:cdk:path: DrugManegementAppStack/LineBotApi/Default/ANY/Resource
+  EventBridgeSchedulerRole9C1F9676:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: scheduler.amazonaws.com
+        Version: "2012-10-17"
+      Description: Role for EventBridge Scheduler to invoke Reminder Handler Lambda
+    Metadata:
+      aws:cdk:path: DrugManegementAppStack/EventBridgeSchedulerRole/Resource
+  EventBridgeSchedulerRoleDefaultPolicy3B63703F:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: lambda:InvokeFunction
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - reminderHandler671885DB
+                - Arn
+        Version: "2012-10-17"
+      PolicyName: EventBridgeSchedulerRoleDefaultPolicy3B63703F
+      Roles:
+        - Ref: EventBridgeSchedulerRole9C1F9676
+    Metadata:
+      aws:cdk:path: DrugManegementAppStack/EventBridgeSchedulerRole/DefaultPolicy/Resource
   CDKMetadata:
     Type: AWS::CDK::Metadata
     Properties:
-      Analytics: v2:deflate64:H4sIAAAAAAAA/81V32/aMBD+W+rHyc1ou4epb7RjExqlDOjDFCF0xEcwdezIdtpGVv73yXYC6bpu1fYyCZT47vzddz9znpx9HCSDE3g0pxm7PxV8k7iFheyeXm/lDDQUaFHTORpV6QxT8o7Q9r+i8GjWTkCxYbCWiuHeJNPw+FzJzHIlU0dQWl2Ty3BnB5IJ1O1JV9LyAtsTygeulSxQ2laSKRaVDXXx99dgzYpyKBI3VwJTR8CYqkB2VZNLR0rNZcZLEMMsU9XBe7TxF4YhlJYJKUBCjmymBM84GnKZumeyeqhb25VnDIwt1axzES38nVZrLWS7sRRc4kHnU/tn5eu4K186T5xGcahZB7dUXvPCy0sxYwsLFn0KTY/wL8TBX3TVUHOxBmPQmmToH9RcJFdVdo/2CgymKxq7JXHXW9k1Ce1e7rRIHdm2p64Old0t69JXdno7HZHo7k6L4BV1wY3hSjYUSp6DxUeoEzcJXuZo7LDkqSMMt1AJO5YWcw099H4T+fienWMiIwj9hKVQtY874JlM87JPs+RdJ6IFLo/m5gAeajZROc9AjNmzpL5dHkgd0enCQo6BUifqkQ/Kw/CGEoTBnWn1VB9m2pES9HHuXk1Wq7hBu1PsNkR/DK4H0XKPdl1PdckMLmnUpY7oVtLVw9qyuxcE/AUL9ZPjf0QIvOKFhrJaQqHYJnFL2Ig2M5Z7868YtoWEw5KxsSsXfisYpe3vLawHnB51Gy4El/lNXHKz4ff1bDRfz0ff7kaLZWijQj0cJ9u3nNWq7nL9/5ECxr4ItQGxwExJBroeS4ZPYUFy/9bz88YASq32GJZBuwGGkwnpZiBUqGlo2DO+0bnMvfy2smVlG+o/SMnevH84HyRnH5LByd5wftp+J5J5fP4Ak2xwvQAHAAA=
+      Analytics: v2:deflate64:H4sIAAAAAAAA/+1XS2/bOBD+LeWxYNSk7aHwzclmt0aT2LWdQyEYxlgcy0woUiWpJKqg/16QomQ53vSZ7HYXBRLInBl+nPeQL6OjN4fR4TO4NQcJuz4QfBVVMwvJNT1ZywloyNCiplM0qtAJxuQ5off+FxRuzbJipYRMsVVUzWElMK5IDtpyy5V8hyUZVERChmTgd9kydz9npKbEKG2/LGEd4MWWt+JCcJmeK+Yok+GH5eR0upyevr88nc0JJRozdQNiogRPSjIgDI3VqiQ1/UWVAsb+EmoFYoaJkgx0OZIM78ggrgh3v3rnfKMBuVZXmDi5eUMdnp2RelEvXGB9hGoqIFsxWErF8MpEF/7zZyH9rrgiKK0uA/QGJBOow0oX0vLuWJQ3XCuZobStIjxDVbSrpHHJc2dq/++RDng8pIdVfVRt6wXlkEXVVPkyAWOKDNmxj2auuUx4DmKYJKroEBoZt2HooxOgSAYSUmQ+qTganzB9WjnUQXYR8myuJu0RbSrGVeBaC8lmJAWX2PFcgX+d+WXc/72BP47748yfcCpDk2ie90ithfcNewqzfQdyStGG7mdKu2GuHGcPZ5/M2MyCRVdlZkfhffJT41fE9Ghbf/4twHdp8TS4j+UPH8gmhjU1r5ZgDFoTDd2HmlfRcZFcoz0Gg/EizJqoOlnLdsT47agzboxbteRLLeKKrMOqTeXCbsIguxhfnJLm8Estago5T8HiLZRRdeZPmaKxw5zHFWG4hkLYkbSYaujh7TbwIHaitJloXAuebuzY14dx5QVCqNux5imXptXHkc7RbhTbIb1FYKhbUgZ3wzQMFOfFf+HUptoah9A/MBeqdDH0vtntApRAztuJhha43Iqb3T5xplKegBixe63iqejeiK02dGYhRW9CSwozwMl5Zndj9ennb6mN3+KK6MBqU8HavOEFAt/LFtWLSmE3SvNPLor91Yj1MtWRoHf38l0Xcv4Oyyl+LLhGRgZrEAYfkqck8ypN0eRKmjD5XD8ozEl7SXFxatjdTd20wzD48nwH5XtB6G9n/VPOCuX1kwi+AJoNdKLVXdk93PzLZ3slfbAxBkaDMb6nXeejZjI09+L/SpAX4fnXdYt9gxZdu/ROq2vqh5nrKFymjjUubF7Ymro3U3RlXty8PIyOXkeHz64M5wfhIRBNm+9nyfE5dF4PAAA=
     Metadata:
       aws:cdk:path: DrugManegementAppStack/CDKMetadata/Default
     Condition: CDKMetadataAvailable
