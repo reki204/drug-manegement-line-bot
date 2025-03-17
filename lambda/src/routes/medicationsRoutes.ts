@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { addMedication } from "../services/medicationService";
-import { verifyLineIdToken } from "../utils/lineVerify";
+import { verifyLineIdToken } from "../utils/line/lineVerify";
 
 const router = new Hono();
 

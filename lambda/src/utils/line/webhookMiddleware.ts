@@ -1,6 +1,6 @@
 import { createMiddleware } from "hono/factory";
 import { env } from "hono/adapter";
-import { Bindings } from "../types/Bindings";
+import { Bindings } from "../../types/Bindings";
 import { validateSignature } from "@line/bot-sdk";
 
 export const lineWebhookMiddleware = createMiddleware<{ Bindings: Bindings }>(

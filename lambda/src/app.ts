@@ -1,9 +1,9 @@
 import { Context, Hono } from "hono";
 import { logger } from "hono/logger";
 import { cors } from "hono/cors";
-import { lineWebhookMiddleware } from "./line/webhookMiddleware";
+import { lineWebhookMiddleware } from "./utils/line/webhookMiddleware";
 import medicationRoutes from "./routes/medicationsRoutes";
-import { createLineClient } from "./line/client";
+import { createLineClient } from "./utils/line/client";
 import { handleTextMessage } from "./handlers/messageHandler";
 import type { WebhookEvent } from "@line/bot-sdk";
 

@@ -1,6 +1,6 @@
 import { env } from "hono/adapter";
 import * as line from "@line/bot-sdk";
-import { Bindings } from "../types/Bindings";
+import { Bindings } from "../../types/Bindings";
 import { Context } from "hono";
 
 export const createLineClient = (c: Context) => {
