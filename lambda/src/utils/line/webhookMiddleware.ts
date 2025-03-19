@@ -1,4 +1,5 @@
 import { createMiddleware } from "hono/factory";
+import { HTTPException } from "hono/http-exception";
 import { env } from "hono/adapter";
 import { Bindings } from "../../types/Bindings";
 import { validateSignature } from "@line/bot-sdk";
@@ -10,11 +11,11 @@ export const lineWebhookMiddleware = createMiddleware<{ Bindings: Bindings }>(
     const { CHANNEL_SECRET } = env<Bindings>(c);
 
     if (!signature || !CHANNEL_SECRET)
-      return c.text("Missing signature or secret", 400);
+      throw new HTTPException(400, { message: "Missing signature or secret" });
+
     if (!validateSignature(body, CHANNEL_SECRET, signature))
-      return c.text("Invalid signature", 403);
+      throw new HTTPException(403, { message: "Invalid signature" });
 
     await next();
-    return c.text("OK", 200);
   }
 );
