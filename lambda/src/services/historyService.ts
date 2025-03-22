@@ -47,6 +47,7 @@ export const getMedicationHistory = async (userId: string) => {
       const medicationName = medicationNames.get(medicationId) || "不明な薬";
 
       return `📅 ${medicationName}: ${date.toLocaleString("ja-JP", {
+        timeZone: "Asia/Tokyo",
         year: "numeric",
         month: "2-digit",
         day: "2-digit",
