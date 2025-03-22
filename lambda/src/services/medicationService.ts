@@ -149,7 +149,7 @@ export const addMedication = async (
 
     // 固定のスケジュール時間がある場合は通知をセットアップ
     if (scheduleTimes && scheduleTimes.length > 0) {
-      // 各スケジュール時間に対してEventBridgeルールを作成し、毎日通知を実施
+      // 各スケジュール時間に対してEventBridge Schedulerを作成し、毎日通知を実施
       await setScheduleReminders(userId, medicationId);
     }
 

@@ -59,9 +59,9 @@ export class DrugManegementAppStack extends cdk.Stack {
       projectionType: dynamodb.ProjectionType.ALL,
     });
 
-    // Reminder Handler Lambda (EventBridgeからの呼び出し専用)
+    // Reminder Handler Lambda (EventBridge Schedulerからの呼び出し専用)
     const reminderHandlerLambda = new NodejsFunction(this, "reminderHandler", {
-      entry: "lambda/reminder-handler/index.ts", // 新しいパスに配置する想定
+      entry: "lambda/reminder-handler/index.ts",
       handler: "handler",
       runtime: lambda.Runtime.NODEJS_20_X,
       environment: {
@@ -84,14 +84,8 @@ export class DrugManegementAppStack extends cdk.Stack {
         CHANNEL_ID: channelId,
         ENV: "production",
         REMINDER_HANDLER_ARN: reminderHandlerLambda.functionArn,
-        // SCHEDULER_ROLE_ARN: schedulerRole.roleArn,
       },
       timeout: cdk.Duration.seconds(30),
-    });
-
-    // Lambda Function URLの設定
-    apiHandlerLambda.addFunctionUrl({
-      authType: lambda.FunctionUrlAuthType.NONE,
     });
 
     // API Gateway設定
@@ -126,7 +120,9 @@ export class DrugManegementAppStack extends cdk.Stack {
         "scheduler:UpdateSchedule",
         "scheduler:ListSchedules",
       ],
-      resources: ["*"],
+      resources: [
+        `arn:aws:scheduler:${this.region}:${this.account}:schedule/default/med-rem-*`,
+      ],
     });
 
     apiHandlerLambda.addToRolePolicy(schedulerPolicy);
