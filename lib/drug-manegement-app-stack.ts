@@ -121,7 +121,7 @@ export class DrugManegementAppStack extends cdk.Stack {
         "scheduler:ListSchedules",
       ],
       resources: [
-        `arn:aws:scheduler:${this.region}:${this.account}:schedule/default/med-rem-*`,
+        `arn:aws:scheduler:${this.region}:${this.account}:schedule/default/med-*`,
       ],
     });
 
