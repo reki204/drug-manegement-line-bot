@@ -9,16 +9,17 @@ import { getMedicationById } from "./medicationService";
  * @returns 返却するメッセージ
  */
 export const getMedicationHistory = async (userId: string) => {
-  const threeDaysAgo = new Date();
-  threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+  // 2週間前までのデータを取得
+  const twoWeeksAgo = new Date();
+  twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
 
   const params = {
     TableName: "MedicationHistory",
     IndexName: "MedicationHistoryByTakenTime",
-    KeyConditionExpression: "userId = :userId AND takenTime >= :threeDaysAgo",
+    KeyConditionExpression: "userId = :userId AND takenTime >= :twoWeeksAgo",
     ExpressionAttributeValues: {
       ":userId": { S: userId },
-      ":threeDaysAgo": { S: threeDaysAgo.toISOString() },
+      ":twoWeeksAgo": { S: twoWeeksAgo.toISOString() },
     },
   };
 
