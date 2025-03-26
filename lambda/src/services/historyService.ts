@@ -26,26 +26,13 @@ export const getMedicationHistory = async (userId: string) => {
   try {
     const result = await dynamoDB.send(new QueryCommand(params));
     if (!result.Items || result.Items.length === 0) {
-      return "直近3日間の服用履歴はありません。";
-    }
-
-    // 薬の情報を取得して名前をマッピング
-    const medicationNames = new Map();
-    for (const item of result.Items) {
-      const medicationId = item.medicationId.S;
-      if (medicationId && !medicationNames.has(medicationId)) {
-        const medication = await getMedicationById(userId, medicationId);
-        if (medication) {
-          medicationNames.set(medicationId, medication.name);
-        }
-      }
+      return "直近14日間の服用履歴はありません。";
     }
 
     // ISO形式の日付を "YYYY/MM/DD HH:mm" に変換
     const formattedHistory = result.Items.map((item) => {
       const date = new Date(item.takenTime.S || "");
-      const medicationId = item.medicationId.S || "";
-      const medicationName = medicationNames.get(medicationId) || "不明な薬";
+      const medicationName = item.medicationName.S;
 
       return `📅 ${medicationName}: ${date.toLocaleString("ja-JP", {
         timeZone: "Asia/Tokyo",
