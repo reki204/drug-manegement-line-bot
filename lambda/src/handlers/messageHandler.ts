@@ -1,6 +1,5 @@
 import {
   getMedications,
-  deleteMedication,
   getMedicationById,
   getMedicationsForQuickReply,
 } from "../services/medicationService";
@@ -8,10 +7,7 @@ import {
   getMedicationHistory,
   recordMedicationHistory,
 } from "../services/historyService";
-import {
-  deleteMedicationSchedules,
-  scheduleNextIntervalReminder,
-} from "../services/reminderService";
+import { scheduleNextIntervalReminder } from "../services/reminderService";
 import type { messagingApi, MessageEvent, QuickReplyItem } from "@line/bot-sdk";
 
 /**
@@ -106,14 +102,14 @@ export const handleTextMessage = async (
         return;
       }
 
-      // クイックリプライ形式で薬の名前とIDを提示
+      // クイックリプライ形式で薬の名前を提示
       const quickReplyItems: QuickReplyItem[] = medications.map(
         (medication: any) => ({
           type: "action",
           action: {
-            type: "message",
+            type: "postback",
             label: medication.name,
-            text: `削除:${medication.medicationId}`,
+            data: `action=deleteMedication&medicationName=${medication.name}&medicationId=${medication.medicationId}`,
           },
         })
       );
@@ -129,17 +125,6 @@ export const handleTextMessage = async (
         ],
       });
       return;
-    }
-
-    // 削除:medicationId」形式のメッセージを処理
-    if (userInputMessage.startsWith("削除:")) {
-      const medicationId = userInputMessage.split(":")[1];
-      if (medicationId) {
-        responseText = await deleteMedication(userId, medicationId);
-        await deleteMedicationSchedules(medicationId);
-      } else {
-        responseText = "削除対象の薬が特定できませんでした。";
-      }
     }
 
     await client.replyMessage({

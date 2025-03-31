@@ -6,6 +6,7 @@ import medicationRoutes from "./routes/medicationsRoutes";
 import { createLineClient } from "./utils/line/client";
 import { handleTextMessage } from "./handlers/messageHandler";
 import type { WebhookEvent } from "@line/bot-sdk";
+import { handlePostbackEvent } from "./handlers/postbackhandler";
 
 const app = new Hono();
 
@@ -30,6 +31,8 @@ app.post("/webhook", async (c: Context) => {
   for (const event of events) {
     if (event.type === "message" && event.message.type === "text") {
       await handleTextMessage(event, lineClient);
+    } else if (event.type === "postback") {
+      await handlePostbackEvent(event, lineClient);
     }
   }
 

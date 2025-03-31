@@ -168,7 +168,6 @@ export const addMedication = async (
  * 薬を削除する
  * @param userId ユーザーID
  * @param medicationId 薬のID
- * @returns 返却するメッセージ
  */
 export const deleteMedication = async (
   userId: string,
@@ -184,8 +183,7 @@ export const deleteMedication = async (
 
   try {
     await dynamoDB.send(new DeleteItemCommand(params));
-    return `薬を削除しました`;
   } catch (error) {
-    return "薬の削除に失敗しました。";
+    console.error(error);
   }
 };
