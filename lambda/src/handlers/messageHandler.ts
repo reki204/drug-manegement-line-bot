@@ -1,13 +1,8 @@
 import {
   getMedications,
-  getMedicationById,
   getMedicationsForQuickReply,
 } from "../services/medicationService";
-import {
-  getMedicationHistory,
-  recordMedicationHistory,
-} from "../services/historyService";
-import { scheduleNextIntervalReminder } from "../services/reminderService";
+import { getMedicationHistory } from "../services/historyService";
 import type { messagingApi, MessageEvent, QuickReplyItem } from "@line/bot-sdk";
 
 /**
@@ -37,26 +32,7 @@ export const handleTextMessage = async (
       responseText = await getMedicationHistory(userId);
     }
 
-    // 「飲みました:medicationId」形式のメッセージを処理
-    if (userInputMessage.startsWith("飲みました:")) {
-      const medicationId = userInputMessage.split(":")[1];
-      if (medicationId) {
-        // 服用履歴を記録
-        responseText = await recordMedicationHistory(userId, medicationId);
-
-        // 次のインターバル通知をスケジュール（インターバル時間が設定されている場合）
-        const medication = await getMedicationById(userId, medicationId);
-        if (medication && medication.intervalHours != "0") {
-          await scheduleNextIntervalReminder(userId, medicationId, new Date());
-          responseText += `\n次の通知を${medication.intervalHours}時間後に設定しました。`;
-        }
-      } else {
-        responseText = "薬のIDを認識できませんでした。";
-      }
-    }
-
     if (userInputMessage === "飲みました") {
-      responseText = "どの薬を飲みましたか？お薬リストから選択してください。";
       const medications = await getMedicationsForQuickReply(userId);
       if (!medications || medications.length === 0) {
         responseText = "登録されている薬はありません。";
@@ -66,24 +42,25 @@ export const handleTextMessage = async (
         });
         return;
       }
-      // クイックリプライ形式で薬の名前とIDを提示
+      // クイックリプライ形式で薬の名前を提示
       const quickReplyItems: QuickReplyItem[] = medications.map(
         (medication: any) => ({
           type: "action",
           action: {
-            type: "message",
+            type: "postback",
             label: medication.name,
-            text: `飲みました:${medication.medicationId}`,
+            data: `action=recordMedication&medicationName=${medication.name}&medicationId=${medication.medicationId}`,
+            displayText: `${medication.name}を飲みました`,
           },
         })
       );
-      // クイックリプライボタン付きでメッセージを送信
-      await client.pushMessage({
-        to: userId,
+
+      await client.replyMessage({
+        replyToken,
         messages: [
           {
             type: "text",
-            text: responseText,
+            text: "どの薬を飲みましたか？お薬リストから選択してください。",
             quickReply: { items: quickReplyItems },
           },
         ],

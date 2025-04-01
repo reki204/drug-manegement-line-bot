@@ -61,9 +61,10 @@ const sendMedicationReminder = async (
             {
               type: "action",
               action: {
-                type: "message",
+                type: "postback",
                 label: "飲みました",
-                text: `飲みました:${medicationId}`,
+                data: `action=recordMedication&medicationName=${medication.name}&medicationId=${medication.medicationId}`,
+                displayText: `${medication.name}を飲みました`,
               },
             },
           ],
