@@ -49,27 +49,6 @@ const sendMedicationReminder = async (
     message += `\n予定時間: ${scheduledTime || intervalHour}`;
   }
 
-  // クイックリプライボタン付きでメッセージを送信
-  await lineClient.pushMessage({
-    to: userId,
-    messages: [
-      {
-        type: "text",
-        text: message,
-        quickReply: {
-          items: [
-            {
-              type: "action",
-              action: {
-                type: "postback",
-                label: "飲みました",
-                data: `action=recordMedication&medicationName=${medication.name}&medicationId=${medication.medicationId}`,
-                displayText: `${medication.name}を飲みました`,
-              },
-            },
-          ],
-        },
-      },
-    ],
-  });
+  // ↓ 必要なくなったため処理削除
+  return;
 };
